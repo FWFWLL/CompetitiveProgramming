@@ -29,7 +29,7 @@ pub fn process_part_2(input: &str) -> String {
     let tri_max_sum: u32 = result
         .iter()
         .take(3)
-        .sum::<u32>();
+        .sum();
 
     return tri_max_sum.to_string();
 }
