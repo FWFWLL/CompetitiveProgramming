@@ -1,11 +1,11 @@
 pub fn process_part_1(input: &str) -> String {
-    let result = input
+    let result: u32 = input
         .split("\n\n")
         .map(|elf_load| {
             elf_load
                 .lines()
                 .map(|item| item.parse::<u32>().unwrap())
-                .sum::<u32>()
+                .sum()
         })
         .max()
         .unwrap();
