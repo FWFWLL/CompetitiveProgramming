@@ -1,61 +1,49 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 pub fn process_part_1(input: &str) -> String {
-    let result: u32 = input
+    let priorities: HashMap<char, usize> = ('a'..='z')
+        .chain('A'..='Z')
+        .into_iter()
+        .enumerate()
+        .map(|(i, c)| (c, i + 1))
+        .collect();
+
+    let result: usize = input
         .lines()
         .map(|line| line.split_at(line.len() / 2))
-        .map(|(first, second)| get_common_char(first, second))
-        .map(|c| get_priority(c))
+        .map(|(first, second)| {
+            first
+                .chars()
+                .find(|c| second.contains(*c))
+                .unwrap()
+        })
+        .map(|c| *priorities.get(&c).unwrap())
         .sum();
 
     return result.to_string();
 }
 
-fn get_common_char(a: &str, b: &str) -> char {
-    let set_a: HashSet<char> = a.chars().collect();
-    let set_b: HashSet<char> = b.chars().collect();
-
-    set_a
-        .into_iter()
-        .filter(|c| set_b.contains(&c))
-        .next()
-        .unwrap()
-}
-
-fn get_priority(c: char) -> u32 {
-    if c.is_ascii_uppercase() {
-        c as u32 - 38
-    } else {
-        c as u32 - 96
-    }
-}
-
 pub fn process_part_2(input: &str) -> String {
-    let mut lines = input.lines();
-
-    let mut sum = 0;
-    loop {
-        if lines.clone().peekable().peek().is_none() {break;}
-
-        let a = lines.next().unwrap();
-        let b = lines.next().unwrap();
-        let c = lines.next().unwrap();
-
-        sum += get_priority(get_common_tri_char(a, b, c));
-    }
-
-    return sum.to_string();
-}
-
-fn get_common_tri_char(a: &str, b: &str, c: &str) -> char {
-    let set_a: HashSet<char> = a.chars().collect();
-    let set_b: HashSet<char> = b.chars().collect();
-    let set_c: HashSet<char> = c.chars().collect();
-
-    set_a
+    let priorities: HashMap<char, usize> = ('a'..='z')
+        .chain('A'..='Z')
         .into_iter()
-        .filter(|c| set_b.contains(&c))
-        .filter(|c| set_c.contains(&c))
-        .next()
-        .unwrap()
+        .enumerate()
+        .map(|(i, c)| (c, i + 1))
+        .collect();
+
+    let result: usize = input
+        .lines()
+        .collect::<Vec<_>>()
+        .chunks(3)
+        .map(|chunk| {
+            chunk[0]
+                .chars()
+                .find(|char| chunk[1].contains(*char) && chunk[2].contains(*char))
+                .unwrap()
+
+        })
+        .map(|c| *priorities.get(&c).unwrap())
+        .sum();
+
+    return result.to_string();
 }
