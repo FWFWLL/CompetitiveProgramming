@@ -1,8 +1,8 @@
 pub fn process_part_1(input: &str) -> String {
-    let result: u32 = input
+    let result: usize = input
         .lines()
         .map(|elf_pair| elf_pair.split_once(',').unwrap())
-        .map(|(first, second)| {
+        .filter(|(first, second)| {
             let (first_start, first_end): (u32, u32) = first
                 .split_once('-')
                 .map(|(start, end)| (start.parse().unwrap(), end.parse().unwrap()))
@@ -13,18 +13,18 @@ pub fn process_part_1(input: &str) -> String {
                 .map(|(start, end)| (start.parse().unwrap(), end.parse().unwrap()))
                 .unwrap();
 
-            if (first_start >= second_start && first_end <= second_end) || (second_start >= first_start && second_end <= first_end) {1} else {0}
+            (first_start >= second_start && first_end <= second_end) || (second_start >= first_start && second_end <= first_end)
         })
-        .sum();
+        .count();
 
     return result.to_string();
 }
 
 pub fn process_part_2(input: &str) -> String {
-    let result: u32 = input
+    let result: usize = input
         .lines()
         .map(|elf_pair| elf_pair.split_once(',').unwrap())
-        .map(|(first, second)| {
+        .filter(|(first, second)| {
             let (first_start, first_end): (u32, u32) = first
                 .split_once('-')
                 .map(|(start, end)| (start.parse().unwrap(), end.parse().unwrap()))
@@ -35,9 +35,9 @@ pub fn process_part_2(input: &str) -> String {
                 .map(|(start, end)| (start.parse().unwrap(), end.parse().unwrap()))
                 .unwrap();
 
-            if first_start <= second_end && first_end >= second_start {1} else {0}
+            first_start <= second_end && first_end >= second_start
         })
-        .sum();
+        .count();
 
     return result.to_string();
 }
