@@ -1,4 +1,5 @@
 use day_01::process_part_2;
+
 use std::fs;
 
 fn main() {
