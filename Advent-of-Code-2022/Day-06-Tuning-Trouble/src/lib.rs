@@ -1,10 +1,12 @@
 use std::collections::BTreeSet;
 
 pub fn process_part_1(input: &str) -> String {
+    let sequence_len = 4;
+
     let result = input
         .chars()
         .collect::<Vec<char>>()
-        .windows(4)
+        .windows(sequence_len)
         .enumerate()
         .find(|(_, subsequence)| {
             let unique_chars: BTreeSet<&char> = subsequence
@@ -13,17 +15,19 @@ pub fn process_part_1(input: &str) -> String {
 
             subsequence.len() == unique_chars.len()
         })
-        .map(|(i, _)| i + 4)
+        .map(|(i, _)| i + sequence_len)
         .unwrap();
 
     return result.to_string();
 }
 
 pub fn process_part_2(input: &str) -> String {
+    let sequence_len = 14;
+
     let result = input
         .chars()
         .collect::<Vec<char>>()
-        .windows(14)
+        .windows(sequence_len)
         .enumerate()
         .find(|(_, subsequence)| {
             let unique_chars: BTreeSet<&char> = subsequence
@@ -32,7 +36,7 @@ pub fn process_part_2(input: &str) -> String {
 
             subsequence.len() == unique_chars.len()
         })
-        .map(|(i, _)| i + 14)
+        .map(|(i, _)| i + sequence_len)
         .unwrap();
 
     return result.to_string();
