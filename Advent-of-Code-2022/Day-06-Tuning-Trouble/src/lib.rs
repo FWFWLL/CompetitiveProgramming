@@ -1,98 +1,62 @@
+use std::collections::BTreeSet;
+
 pub fn process_part_1(input: &str) -> String {
-    let mut datastream = input
-        .chars();
+    let result = input
+        .chars()
+        .collect::<Vec<char>>()
+        .windows(4)
+        .enumerate()
+        .find(|(_, subsequence)| {
+            let unique_chars: BTreeSet<&char> = subsequence
+                .iter()
+                .collect();
 
-    let mut position = 4;
+            subsequence.len() == unique_chars.len()
+        })
+        .map(|(i, _)| i + 4)
+        .unwrap();
 
-    while datastream.next().is_some() {
-        let mut subsequence: Vec<char> = datastream
-            .clone()
-            .take(4)
-            .collect();
-
-        subsequence.sort();
-        subsequence.dedup();
-
-        position += 1;
-
-        if subsequence.len() == 4 {
-            break;
-        }
-    }
-
-    return position.to_string();
+    return result.to_string();
 }
 
 pub fn process_part_2(input: &str) -> String {
-    let mut datastream = input
-        .chars();
+    let result = input
+        .chars()
+        .collect::<Vec<char>>()
+        .windows(14)
+        .enumerate()
+        .find(|(_, subsequence)| {
+            let unique_chars: BTreeSet<&char> = subsequence
+                .iter()
+                .collect();
 
-    let mut position = 14;
+            subsequence.len() == unique_chars.len()
+        })
+        .map(|(i, _)| i + 14)
+        .unwrap();
 
-    while datastream.next().is_some() {
-        let mut subsequence: Vec<char> = datastream
-            .clone()
-            .take(14)
-            .collect();
-
-        subsequence.sort();
-        subsequence.dedup();
-
-        position += 1;
-
-        if subsequence.len() == 14 {
-            break;
-        }
-    }
-
-    return position.to_string();
+    return result.to_string();
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use std::fs;
-
     #[test]
     fn test_part_1() {
-        let input_1 = fs::read_to_string("./test_input_1.txt").unwrap();
-        let input_2 = fs::read_to_string("./test_input_2.txt").unwrap();
-        let input_3 = fs::read_to_string("./test_input_3.txt").unwrap();
-        let input_4 = fs::read_to_string("./test_input_4.txt").unwrap();
-        let input_5 = fs::read_to_string("./test_input_5.txt").unwrap();
-
-        let result_1 = process_part_1(&input_1);
-        let result_2 = process_part_1(&input_2);
-        let result_3 = process_part_1(&input_3);
-        let result_4 = process_part_1(&input_4);
-        let result_5 = process_part_1(&input_5);
-
-        assert_eq!(result_1, "7");
-        assert_eq!(result_2, "5");
-        assert_eq!(result_3, "6");
-        assert_eq!(result_4, "10");
-        assert_eq!(result_5, "11");
+        assert_eq!(process_part_1("mjqjpqmgbljsphdztnvjfqwrcgsmlb"), "7");
+        assert_eq!(process_part_1("bvwbjplbgvbhsrlpgdmjqwftvncz"), "5");
+        assert_eq!(process_part_1("nppdvjthqldpwncqszvftbrmjlhg"), "6");
+        assert_eq!(process_part_1("nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg"), "10");
+        assert_eq!(process_part_1("zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw"), "11");
     }
 
     #[test]
     fn test_part_2() {
-        let input_1 = fs::read_to_string("./test_input_1.txt").unwrap();
-        let input_2 = fs::read_to_string("./test_input_2.txt").unwrap();
-        let input_3 = fs::read_to_string("./test_input_3.txt").unwrap();
-        let input_4 = fs::read_to_string("./test_input_4.txt").unwrap();
-        let input_5 = fs::read_to_string("./test_input_5.txt").unwrap();
-
-        let result_1 = process_part_2(&input_1);
-        let result_2 = process_part_2(&input_2);
-        let result_3 = process_part_2(&input_3);
-        let result_4 = process_part_2(&input_4);
-        let result_5 = process_part_2(&input_5);
-
-        assert_eq!(result_1, "19");
-        assert_eq!(result_2, "23");
-        assert_eq!(result_3, "23");
-        assert_eq!(result_4, "29");
-        assert_eq!(result_5, "26");
+        assert_eq!(process_part_2("mjqjpqmgbljsphdztnvjfqwrcgsmlb"), "19");
+        assert_eq!(process_part_2("bvwbjplbgvbhsrlpgdmjqwftvncz"), "23");
+        assert_eq!(process_part_2("nppdvjthqldpwncqszvftbrmjlhg"), "23");
+        assert_eq!(process_part_2("nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg"), "29");
+        assert_eq!(process_part_2("zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw"), "26");
     }
 }

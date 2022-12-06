@@ -1,6 +1,5 @@
 target/
 
-test*
-
 Cargo.lock
 input.txt
+test_input.txt
