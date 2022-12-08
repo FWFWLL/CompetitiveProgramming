@@ -1,32 +1,34 @@
-#![feature(iter_intersperse)]
-
 use std::collections::BTreeMap;
 
-use nom::branch::alt;
-use nom::bytes::complete::{tag, is_a};
-use nom::IResult;
-use nom::character::complete::{newline, alpha1, self};
-use nom::multi::separated_list1;
-use nom::sequence::separated_pair;
+use nom::{
+    IResult,
+    bytes::complete::{
+        tag,
+        is_a
+    },
+    branch::alt,
+    character::complete::{
+        alpha1,
+        self,
+        newline
+    },
+    sequence::separated_pair,
+    multi::separated_list1
+};
 
-#[derive(Debug)]
 enum Command<'a> {
-    ChangeDir(ChangeDir<'a>),
-    List(Vec<Files<'a>>),
+    Cd(Cd<'a>),
+    Ls(Vec<Files<'a>>),
 }
 
-#[derive(Debug)]
-enum ChangeDir<'a> {
+enum Cd<'a> {
     Root,
     Up,
     Down(&'a str),
 }
 
-#[derive(Debug)]
 enum Files<'a> {
-    File {
-        size: u32,
-    },
+    File(u32),
     Dir(&'a str),
 }
 
@@ -35,9 +37,9 @@ fn cd(input: &str) -> IResult<&str, Command> {
     let (input, dir) = alt((tag("/"), tag(".."), alpha1))(input)?;
 
     let cmd = match dir {
-        "/" => Command::ChangeDir(ChangeDir::Root),
-        ".." => Command::ChangeDir(ChangeDir::Up),
-        name => Command::ChangeDir(ChangeDir::Down(name)),
+        "/" => Command::Cd(Cd::Root),
+        ".." => Command::Cd(Cd::Up),
+        name => Command::Cd(Cd::Down(name)),
     };
 
     Ok((input, cmd))
@@ -46,7 +48,7 @@ fn cd(input: &str) -> IResult<&str, Command> {
 fn file(input: &str) -> IResult<&str, Files> {
     let (input, (size, _)) = separated_pair(complete::u32, tag(" "), is_a("qwertyuiopasdfghjklzxcvbnm."))(input)?;
 
-    Ok((input, Files::File {size}))
+    Ok((input, Files::File(size)))
 }
 
 fn dir(input: &str) -> IResult<&str, Files> {
@@ -61,7 +63,7 @@ fn ls(input: &str) -> IResult<&str, Command> {
     let (input, _) = newline(input)?;
     let (input, files) = separated_list1(newline, alt((file, dir)))(input)?;
 
-    Ok((input, Command::List(files)))
+    Ok((input, Command::Ls(files)))
 }
 
 fn commands(input: &str) -> IResult<&str, Vec<Command>> {
@@ -70,152 +72,67 @@ fn commands(input: &str) -> IResult<&str, Vec<Command>> {
     Ok((input, cmd))
 }
 
-struct File {
-    size: u32,
+fn calculate_sizes<'a>((mut context, mut sizes): (Vec<&'a str>, BTreeMap<Vec<&'a str>, u32>), command: &'a Command) -> (Vec<&'a str>, BTreeMap<Vec<&'a str>, u32>) {
+    match command {
+        Command::Cd(Cd::Root) => {
+            context.push("");
+        },
+        Command::Cd(Cd::Up) => {
+            context.pop();
+        },
+        Command::Cd(Cd::Down(name)) => {
+            context.push(name);
+        },
+        Command::Ls(files) => {
+            let sum: u32 = files
+                .iter()
+                .filter_map(|file| if let Files::File(size) = file {Some(size)} else {None})
+                .sum();
+
+            (0..context.len()).for_each(|i| {
+                sizes
+                    .entry(context[0..=i].to_vec())
+                    .and_modify(|v| *v += sum)
+                    .or_insert(sum);
+            });
+        }
+    };
+
+    (context, sizes)
 }
 
 pub fn process_part_1(input: &str) -> String {
-    let (_, commands) = commands(input).unwrap();
+    let commands = commands(input).unwrap().1;
 
-    let mut directories: BTreeMap<String, Vec<File>> = BTreeMap::new();
-    let mut context: Vec<&str> = vec![];
-
-    commands
+    let (_, sizes) = commands
         .iter()
-        .for_each(|command| {
-            match command {
-                Command::ChangeDir(ChangeDir::Root) => context.push("/"),
-                Command::ChangeDir(ChangeDir::Up) => {
-                    context.pop();
-                    context.pop();
-                },
-                Command::ChangeDir(ChangeDir::Down(name)) => {
-                    context.push(name);
-                    context.push("/");
-                },
-                Command::List(files) => {
-                    directories.entry(context.iter().cloned().collect()).or_insert(vec![]);
-
-                    files
-                        .iter()
-                        .for_each(|file| {
-                            match file {
-                                Files::File {size, ..} => {
-                                    directories.entry(context.iter().cloned().collect()).and_modify(|vec| {
-                                        vec.push(File {size: *size})
-                                    });
-                                },
-                                Files::Dir(_) => (),
-                            }
-                        });
-                },
-            }
-        });
-
-    let mut sizes: BTreeMap<String, u32> = BTreeMap::new();
-
-    directories
-        .iter()
-        .for_each(|(path, files)| {
-            let dirs: Vec<&str> = path.split("/").collect();
-
-            let size: u32 = files
-                .iter()
-                .map(|File {size, ..}| size)
-                .sum();
-
-            (0..dirs.len())
-                .into_iter()
-                .for_each(|i| {
-                    sizes
-                        .entry((&dirs[0..i]).iter().cloned().collect())
-                        .and_modify(|v| *v += size)
-                        .or_insert(size);
-                });
-        });
+        .fold((vec![], BTreeMap::new()), calculate_sizes);
 
     let result: u32 = sizes
         .iter()
+        .filter(|(_, &size)| size < 100_000)
         .map(|(_, size)| size)
-        .filter(|&&size| size <= 100000)
         .sum();
 
     return result.to_string();
 }
 
 pub fn process_part_2(input: &str) -> String {
-    let (_, commands) = commands(input).unwrap();
+    let commands = commands(input).unwrap().1;
 
-    let mut directories: BTreeMap<String, Vec<File>> = BTreeMap::new();
-    let mut context: Vec<&str> = vec![];
-
-    commands
+    let (_, sizes) = commands
         .iter()
-        .for_each(|command| {
-            match command {
-                Command::ChangeDir(ChangeDir::Root) => context.push("/"),
-                Command::ChangeDir(ChangeDir::Up) => {
-                    context.pop();
-                    context.pop();
-                },
-                Command::ChangeDir(ChangeDir::Down(name)) => {
-                    context.push(name);
-                    context.push("/");
-                },
-                Command::List(files) => {
-                    directories.entry(context.iter().cloned().intersperse("/").collect()).or_insert(vec![]);
+        .fold((vec![], BTreeMap::new()), calculate_sizes);
 
-                    files
-                        .iter()
-                        .for_each(|file| {
-                            match file {
-                                Files::File {size, ..} => {
-                                    directories.entry(context.iter().cloned().intersperse("/").collect()).and_modify(|vec| {
-                                        vec.push(File {size: *size})
-                                    });
-                                },
-                                Files::Dir(_) => (),
-                            }
-                        });
-                },
-            }
-        });
-
-    let mut sizes: BTreeMap<String, u32> = BTreeMap::new();
-
-    directories
-        .iter()
-        .for_each(|(path, files)| {
-            let dirs: Vec<&str> = path.split("/").collect();
-
-            let size: u32 = files
-                .iter()
-                .map(|File {size, ..}| size)
-                .sum();
-
-            (0..dirs.len())
-                .into_iter()
-                .for_each(|i| {
-                    sizes
-                        .entry((&dirs[0..=i]).iter().cloned().intersperse("/").collect())
-                        .and_modify(|v| *v += size)
-                        .or_insert(size);
-                });
-        });
-
-    let total = 70_000_000;
-    let needed = 30_000_000;
-
-    let used = sizes
-        .get("")
-        .unwrap();
-
-    let free = total - used;
-    let to_free = needed - free;
+    let total_space = 70_000_000;
+    let needed_space = 30_000_000;
+    let used_space = sizes.get(&vec![""]).unwrap();
+    let free_space = total_space - used_space;
+    let free_space_needed = needed_space - free_space;
 
     let result: u32 = sizes
         .iter()
-        .filter(|(_, &size)| size > to_free)
+        .filter(|(_, &size)| size > free_space_needed)
         .map(|(_, size)| *size)
         .min()
         .unwrap();
