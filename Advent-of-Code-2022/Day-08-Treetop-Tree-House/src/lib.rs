@@ -1,5 +1,5 @@
 pub fn process_part_1(input: &str) -> String {
-    let map: Vec<Vec<u32>> = input
+    let trees: Vec<Vec<u32>> = input
         .lines()
         .map(|line| {
             line
@@ -9,76 +9,90 @@ pub fn process_part_1(input: &str) -> String {
         })
         .collect();
 
-    let mut sum = 0;
-    for i in 1..map.len() - 1 {
-        for j in 1..map[0].len() - 1 {
-            let curr_tree_height = map[i][j];
+    let rows = trees.len();
+    let columns = trees[0].len();
 
-            // North
-            let mut not_visible_n = false;
-            for k in (0..i).rev() {
-                if curr_tree_height <= map[k][j] {
-                    not_visible_n = true;
-                    break;
-                }
+    let mut visible_trees: Vec<Vec<bool>> = trees
+        .iter()
+        .enumerate()
+        .map(|(r, tree_row)| {
+            tree_row
+                .iter()
+                .enumerate()
+                .map(|(c, _)| if r == 0 || r == rows - 1 || c == 0 || c == columns - 1 {true} else {false})
+                .collect()
+        })
+        .collect();
+
+    let mut current_tree_height = 0;
+
+    // North
+    (0..columns).for_each(|c| {
+        current_tree_height = 0;
+
+        (0..rows).for_each(|r| {
+            if r == 0 {
+                current_tree_height = trees[r][c];
+            } else if trees[r][c] > current_tree_height {
+                current_tree_height = trees[r][c];
+                visible_trees[r][c] = true;
             }
+        });
+    });
 
-            if not_visible_n == false {
-                sum += 1;
-                continue;
+    // West
+    (0..rows).for_each(|r| {
+        current_tree_height = 0;
+
+        (0..columns).for_each(|c| {
+            if c == 0 {
+                current_tree_height = trees[r][c];
+            } else if trees[r][c] > current_tree_height {
+                current_tree_height = trees[r][c];
+                visible_trees[r][c] = true;
             }
+        });
+    });
 
-            // West
-            let mut not_visible_w = false;
-            for k in (0..j).rev() {
-                if curr_tree_height <= map[i][k] {
-                    not_visible_w = true;
-                    break;
-                }
+    // South
+    (0..columns).rev().for_each(|c| {
+        current_tree_height = 0;
+
+        (0..rows).rev().for_each(|r| {
+            if r == rows - 1 {
+                current_tree_height = trees[r][c];
+            } else if trees[r][c] > current_tree_height {
+                current_tree_height = trees[r][c];
+                visible_trees[r][c] = true;
             }
+        });
+    });
 
-            if not_visible_w == false {
-                sum += 1;
-                continue;
+    // East
+    (0..rows).rev().for_each(|r| {
+        current_tree_height = 0;
+
+        (0..columns).rev().for_each(|c| {
+            if c == columns - 1 {
+                current_tree_height = trees[r][c];
+            } else if trees[r][c] > current_tree_height {
+                current_tree_height = trees[r][c];
+                visible_trees[r][c] = true;
             }
+        });
+    });
 
-            // South
-            let mut not_visible_s = false;
-            for k in (i + 1)..map.len() {
-                if curr_tree_height <= map[k][j] {
-                    not_visible_s = true;
-                    break;
-                }
-            }
-
-            if not_visible_s == false {
-                sum += 1;
-                continue;
-            }
-
-            // East
-            let mut not_visible_e = false;
-            for k in (j + 1)..map[i].len() {
-                if curr_tree_height <= map[i][k] {
-                    not_visible_e = true;
-                    break;
-                }
-            }
-
-            if not_visible_e == false {
-                sum += 1;
-                continue;
-            }
-        }
-    }
-
-    let result = sum + (2 * map.len()) + (2 * map[0].len()) - 4;
+    let result: usize = visible_trees
+        .iter()
+        .flatten()
+        .filter(|&&visible| visible)
+        .count();
 
     return result.to_string();
 }
 
 pub fn process_part_2(input: &str) -> String {
-    let map: Vec<Vec<u32>> = input
+    let trees: Vec<Vec<u32>> = input
         .lines()
         .map(|line| {
             line
@@ -88,53 +102,50 @@ pub fn process_part_2(input: &str) -> String {
         })
         .collect();
 
-    let mut scenic_scores: Vec<u32> = Vec::new();
+    let rows = trees.len();
+    let columns = trees[0].len();
 
-    for i in 1..map.len() - 1 {
-        for j in 1..map[0].len() - 1 {
-            let curr_tree_height = map[i][j];
+    let mut result = 0;
+
+    trees.iter().enumerate().for_each(|(r, tree_row)| {
+        tree_row.iter().enumerate().for_each(|(c, &tree_height)| {
+            let mut scores = [0, 0, 0, 0];
 
             // North
-            let mut visible_trees_n = 0;
-            for k in (0..i).rev() {
-                visible_trees_n += 1;
-                if curr_tree_height <= map[k][j] {
-                    break;
-                }
+            for i in (0..r).rev() {
+                scores[0] += 1;
+
+                if tree_height <= trees[i][c] {break}
             }
 
             // West
-            let mut visible_trees_w = 0;
-            for k in (0..j).rev() {
-                visible_trees_w += 1;
-                if curr_tree_height <= map[i][k] {
-                    break;
-                }
+            for i in (0..c).rev() {
+                scores[1] += 1;
+
+                if tree_height <= trees[r][i] {break}
             }
 
             // South
-            let mut visible_trees_s = 0;
-            for k in (i + 1)..map.len() {
-                visible_trees_s += 1;
-                if curr_tree_height <= map[k][j] {
-                    break;
-                }
+            for i in (r + 1)..rows {
+                scores[2] += 1;
+
+                if tree_height <= trees[i][c] {break}
             }
 
             // East
-            let mut visible_trees_e = 0;
-            for k in (j + 1)..map[i].len() {
-                visible_trees_e += 1;
-                if curr_tree_height <= map[i][k] {
-                    break;
-                }
+            for i in (c + 1)..columns {
+                scores[3] += 1;
+
+                if tree_height <= trees[r][i] {break}
             }
 
-            scenic_scores.push(visible_trees_n * visible_trees_w * visible_trees_e * visible_trees_s)
-        }
-    }
+            let scenic_score = scores.iter().product();
 
-    let result = scenic_scores.iter().max().unwrap();
+            if scenic_score > result {
+                result = scenic_score;
+            }
+        });
+    });
 
     return result.to_string();
 }
