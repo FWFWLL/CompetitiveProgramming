@@ -2,4 +2,5 @@ target/
 
 Cargo.lock
 input.txt
-test_input.txt
+test_input*.txt
+test_output*.txt
