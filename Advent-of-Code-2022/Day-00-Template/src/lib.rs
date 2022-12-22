@@ -10,22 +10,18 @@ pub fn process_part_2(input: &str) -> String {
 mod tests {
     use super::*;
 
-    use std::fs;
+    const INPUT: &str = include_str!("../test_input.txt");
 
     #[test]
     fn test_part_1() {
-        let input = fs::read_to_string("./test_input.txt").unwrap();
-
-        let result = process_part_1(&input);
+        let result = process_part_1(INPUT);
 
         assert_eq!(result, "");
     }
 
     #[test]
     fn test_part_2() {
-        let input = fs::read_to_string("./test_input.txt").unwrap();
-
-        let result = process_part_2(&input);
+        let result = process_part_2(INPUT);
 
         assert_eq!(result, "");
     }
