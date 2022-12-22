@@ -53,9 +53,7 @@ impl Monkey {
                     Value::Num(num) => *num,
                 };
 
-                let result = num_a + num_b;
-
-                result % magic_trick
+                (num_a + num_b) % magic_trick
             },
             Operation::Mul((a, b)) => {
                 let num_a = match a {
@@ -68,9 +66,7 @@ impl Monkey {
                     Value::Num(num) => *num,
                 };
 
-                let result = num_a * num_b;
-
-                result % magic_trick
+                (num_a * num_b) % magic_trick
             }
         };
 
