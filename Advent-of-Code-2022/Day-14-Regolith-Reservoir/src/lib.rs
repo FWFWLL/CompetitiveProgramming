@@ -1,115 +1,150 @@
+use std::collections::BTreeSet;
+
 use itertools::Itertools;
 
 use nom::*;
 use nom::bytes::streaming::tag;
-use nom::character::complete::{newline, self};
+use nom::character::complete::{self, line_ending};
 use nom::multi::separated_list1;
 use nom::sequence::separated_pair;
 
-#[derive(Debug)]
-enum Material {
-    Air,
-    Rock,
-    Sand,
-}
-
-fn rock_path(input: &str) -> IResult<&str, Vec<(u32, u32)>> {
+fn rock_path(input: &str) -> IResult<&str, BTreeSet<(u32, u32)>> {
     let (input, rock_path) = separated_list1(tag(" -> "), separated_pair(complete::u32, tag(","), complete::u32))(input)?;
 
-    Ok((input, rock_path))
+    let rocks = rock_path
+        .into_iter()
+        .tuple_windows()
+        .flat_map(|((ax, ay), (bx, by))| {
+            let x_min = ax.min(bx);
+            let x_max = ax.max(bx);
+            let x_range = x_min..=x_max;
+
+            let y_min = ay.min(by);
+            let y_max = ay.max(by);
+            let y_range = y_min..=y_max;
+
+            x_range.cartesian_product(y_range)
+        })
+        .collect();
+
+    Ok((input, rocks))
 }
 
-fn parse_rock_paths(input: &str) -> IResult<&str, Vec<Vec<(u32, u32)>>> {
-    let (input, rock_paths) = separated_list1(newline, rock_path)(input)?;
+fn rocks(input: &str) -> IResult<&str, BTreeSet<(u32, u32)>> {
+    let (input, rocks) = separated_list1(line_ending, rock_path)(input)?;
 
-    Ok((input, rock_paths))
+    let rocks = rocks
+        .into_iter()
+        .flatten()
+        .collect();
+
+    Ok((input, rocks))
 }
 
 pub fn process_part_1(input: &str) -> String {
-    let rock_paths = parse_rock_paths(input).unwrap().1;
+    let mut rocks = rocks(input).unwrap().1;
 
-    dbg!(&rock_paths);
+    let rock_count = rocks.len();
 
-    let (min_x, min_y, max_x, max_y) = get_bounds(&rock_paths);
-
-    let offset_x = max_x - min_x;
-    let offset_y = max_y - min_y;
-
-    let materials: Vec<Vec<Material>> = populate_material_vec(rock_paths, offset_x, offset_y);
-
-    dbg!(&materials);
-
-    let display: String = materials
-        .iter()
-        .map(|vec| {
-            vec
-                .iter()
-                .map(|material| {
-                    match material {
-                        Material::Air => ".",
-                        Material::Rock => "#",
-                        Material::Sand => "o",
-                    }
-                }).collect()
-        })
-        .intersperse("\n".to_string())
+    let mut rocks_vec: Vec<(u32, u32)> = rocks
+        .clone()
+        .into_iter()
         .collect();
 
-    println!("{display}");
+    rocks_vec.sort_by(|a, b| a.1.cmp(&b.1));
 
-    todo!("Part 1");
-}
-
-fn populate_material_vec(rock_paths: Vec<Vec<(u32, u32)>>, offset_x: u32, offset_y: u32) -> Vec<Vec<Material>> {
-    let mut materials: Vec<Vec<Material>> = vec![];
-
-    // Fill with air
-    (0..=offset_y as usize).for_each(|y| {
-        materials.push(vec![]);
-
-        (0..=offset_x).for_each(|_| {
-            materials[y].push(Material::Air);
-        });
-    });
-
-    return materials;
-}
-
-// Probably a better way to do this
-fn get_bounds(rock_paths: &Vec<Vec<(u32, u32)>>) -> (u32, u32, u32, u32) {
-    let min_x = *rock_paths
-        .iter()
-        .flat_map(|path| path.iter().map(|(x, _)| x))
-        .min()
+    let lowest_rock = rocks_vec
+        .last()
         .unwrap();
 
-    dbg!(&min_x);
+    let mut sand = (500, 0);
 
-    let max_x = *rock_paths
-        .iter()
-        .flat_map(|path| path.iter().map(|(x, _)| x))
-        .max()
-        .unwrap();
+    loop {
+        if sand.1 > lowest_rock.1 {break}
 
-    dbg!(&max_x);
+        let down = (sand.0, sand.1 + 1);
+        let left = (sand.0 - 1, sand.1 + 1);
+        let right = (sand.0 + 1, sand.1 + 1);
 
-    let min_y = 0;
+        let down_check = rocks.get(&down);
+        let left_check = rocks.get(&left);
+        let right_check = rocks.get(&right);
 
-    dbg!(&min_y);
+        match (down_check, left_check, right_check) {
+            (None, _, _) => sand = down,
+            (_, None, _) => sand = left,
+            (_, _, None) => sand = right,
+            (Some(_), Some(_), Some(_)) => {
+                rocks.insert(sand);
 
-    let max_y = *rock_paths
-        .iter()
-        .flat_map(|path| path.iter().map(|(_, y)| y))
-        .max()
-        .unwrap();
+                sand = (500, 0)
+            },
+        }
+    }
 
-    dbg!(&max_y);
+    let result = rocks.len() - rock_count;
 
-    (min_x, min_y, max_x, max_y)
+    return result.to_string();
 }
 
 pub fn process_part_2(input: &str) -> String {
-    todo!("Part 2");
+    let mut rocks = rocks(input).unwrap().1;
+
+    let rock_count = rocks.len();
+
+    let mut rocks_vec: Vec<(u32, u32)> = rocks
+        .clone()
+        .into_iter()
+        .collect();
+
+    rocks_vec.sort_by(|a, b| a.1.cmp(&b.1));
+
+    let lowest_rock = rocks_vec
+        .last()
+        .unwrap();
+
+    let floor = lowest_rock.1 + 2;
+
+    let mut sand = (500, 0);
+
+    while let None = rocks.get(&(500, 0)) {
+        let down = (sand.0, sand.1 + 1);
+        let left = (sand.0 - 1, sand.1 + 1);
+        let right = (sand.0 + 1, sand.1 + 1);
+
+        let down_check = rocks
+            .get(&down)
+            .or_else(|| {
+                if down.1 == floor {Some(&lowest_rock)} else {None}
+            });
+
+        let left_check = rocks
+            .get(&left)
+            .or_else(|| {
+                if left.1 == floor {Some(&lowest_rock)} else {None}
+            });
+
+        let right_check = rocks
+            .get(&right)
+            .or_else(|| {
+                if right.1 == floor {Some(&lowest_rock)} else {None}
+            });
+
+        match (down_check, left_check, right_check) {
+            (Some(_), Some(_), Some(_)) => {
+                rocks.insert(sand);
+
+                sand = (500, 0)
+            },
+            (None, _, _) => sand = down,
+            (_, None, _) => sand = left,
+            (_, _, None) => sand = right,
+        }
+    }
+
+    let result = rocks.len() - rock_count;
+
+    return result.to_string();
 }
 
 #[cfg(test)]
@@ -122,14 +157,14 @@ mod tests {
     fn test_part_1() {
         let result = process_part_1(INPUT);
 
-        assert_eq!(result, "");
+        assert_eq!(result, "24");
     }
 
     #[test]
     fn test_part_2() {
         let result = process_part_2(INPUT);
 
-        assert_eq!(result, "");
+        assert_eq!(result, "93");
     }
 }
 
